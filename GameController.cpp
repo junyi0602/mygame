@@ -85,10 +85,11 @@ void GameController::tryMove(Direction dir) {
         state.mousePos = state.startPos;
         senseCurrentCell();
 
-        if (state.opportunitiesLeft == 0 || reachedGoal) { // Actually, the rule says 2 chances. If reached goal, maybe finish? Wait, rule says: "至少到达过一次终点 -> 游戏成功". But "两次机会都未成功到达终点 -> 游戏失败". It means 2 chances in total. If you reach goal on 1st chance, do you get a 2nd chance? The rule says "每次机会结束时，行动次数重置... 两次机会用完... 至少成功一次->成功". Let's assume you just play 2 chances, or if you reach the goal you win. Let's stick to 2 chances total or early win.
-            // Let's modify: if opportunities == 0, game over.
+        // Emit signal for the end of this opportunity
+        if (state.opportunitiesLeft > 0) {
+            emit opportunityEnded(reachedGoal);
         }
-        
+
         if (state.opportunitiesLeft == 0) {
             state.gameOver = true;
             state.gameWin = std::any_of(

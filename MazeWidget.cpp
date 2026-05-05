@@ -6,6 +6,13 @@
 MazeWidget::MazeWidget(GameController *controller, QWidget *parent)
     : QWidget(parent), controller(controller), cellSize(40) {
     setMinimumSize(400, 400);
+    
+    // Load the mouse image
+    if (!mousePixmap.load(":/mouse.png")) {
+        // If loading fails, it will remain empty, and we can fallback to drawing a circle or just log it.
+        qWarning("Failed to load mouse.png");
+    }
+
     connect(controller, &GameController::stateChanged, this, [this](){
         update();
     });
@@ -111,7 +118,17 @@ void MazeWidget::paintEvent(QPaintEvent *event) {
 
     // Draw mouse
     QPoint mouseScreenPos = mapToScreen(state.mousePos);
-    painter.setBrush(QBrush(Qt::blue));
-    painter.setPen(Qt::NoPen);
-    painter.drawEllipse(mouseScreenPos.x() + cellSize / 4, mouseScreenPos.y() + cellSize / 4, cellSize / 2, cellSize / 2);
+    if (!mousePixmap.isNull()) {
+        // Scale pixmap to fit the cell nicely (e.g. 80% of cell size)
+        int padding = cellSize * 0.1;
+        int targetSize = cellSize * 0.8;
+        painter.drawPixmap(mouseScreenPos.x() + padding, mouseScreenPos.y() + padding, 
+                           targetSize, targetSize, 
+                           mousePixmap.scaled(targetSize, targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        // Fallback if image failed to load
+        painter.setBrush(QBrush(Qt::blue));
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(mouseScreenPos.x() + cellSize / 4, mouseScreenPos.y() + cellSize / 4, cellSize / 2, cellSize / 2);
+    }
 }

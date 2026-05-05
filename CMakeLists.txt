@@ -24,6 +24,7 @@ set(PROJECT_SOURCES
         MazeWidget.h
         Cell.h
         Direction.h
+        resources.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

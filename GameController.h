@@ -46,6 +46,7 @@ public:
 signals:
     void stateChanged();
     void gameFinished(bool win, int finalStars);
+    void opportunityEnded(bool reachedGoal);
 
 private:
     GameState state;

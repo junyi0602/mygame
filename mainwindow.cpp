@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(controller, &GameController::stateChanged, this, &MainWindow::updateUI);
     connect(controller, &GameController::gameFinished, this, &MainWindow::onGameFinished);
+    connect(controller, &GameController::opportunityEnded, this, &MainWindow::onOpportunityEnded);
 
     controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
     
@@ -96,6 +97,14 @@ void MainWindow::onGameFinished(bool win, int finalStars) {
     // Optional: Restart automatically or wait for a button. 
     // Here we restart automatically after dismissing the message.
     controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
+}
+
+void MainWindow::onOpportunityEnded(bool reachedGoal) {
+    QString title = reachedGoal ? "到达终点！" : "哎呀，撞墙了！";
+    QString msg = reachedGoal ? "太棒了，你成功找到了终点！\n迷宫记忆已保存，这是你的第二次机会，试试看能不能走得更快！"
+                              : "你不小心撞到了墙壁，本次机会结束。\n迷宫的墙壁记忆已保存，机械鼠已回到起点，请开始你的最后一次机会！";
+    
+    QMessageBox::warning(this, title, msg);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event) {

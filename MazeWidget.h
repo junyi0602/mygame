@@ -2,6 +2,7 @@
 #define MAZEWIDGET_H
 
 #include <QWidget>
+#include <QPixmap>
 #include "GameController.h"
 
 class MazeWidget : public QWidget {
@@ -16,6 +17,7 @@ protected:
 private:
     GameController *controller;
     int cellSize;
+    QPixmap mousePixmap;
     
     QPoint mapToScreen(const QPoint& p) const;
 };

@@ -20,6 +20,7 @@ protected:
 private slots:
     void updateUI();
     void onGameFinished(bool win, int finalStars);
+    void onOpportunityEnded(bool reachedGoal);
 
 private:
     GameController *controller;
