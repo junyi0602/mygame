@@ -15,8 +15,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(controller, &GameController::gameFinished, this, &MainWindow::onGameFinished);
     connect(controller, &GameController::opportunityEnded, this, &MainWindow::onOpportunityEnded);
 
-    controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
-    
     // Focus policy to accept keyboard events
     setFocusPolicy(Qt::StrongFocus);
 }
@@ -25,8 +23,36 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupUI() {
-    QWidget *centralWidget = new QWidget(this);
-    QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
+    stackedWidget = new QStackedWidget(this);
+
+    // --- Start Screen ---
+    startScreen = new QWidget();
+    QVBoxLayout *startLayout = new QVBoxLayout(startScreen);
+    startLayout->setAlignment(Qt::AlignCenter);
+
+    QLabel *titleLabel = new QLabel("发条机械鼠迷宫", startScreen);
+    titleLabel->setStyleSheet("font-size: 32px; font-weight: bold; margin-bottom: 30px;");
+    titleLabel->setAlignment(Qt::AlignCenter);
+
+    QPushButton *btnStart = new QPushButton("开始游戏", startScreen);
+    btnStart->setFixedSize(200, 50);
+    btnStart->setStyleSheet("font-size: 18px;");
+
+    QPushButton *btnRules = new QPushButton("游戏规则", startScreen);
+    btnRules->setFixedSize(200, 50);
+    btnRules->setStyleSheet("font-size: 18px;");
+
+    startLayout->addWidget(titleLabel);
+    startLayout->addWidget(btnStart, 0, Qt::AlignHCenter);
+    startLayout->addSpacing(20);
+    startLayout->addWidget(btnRules, 0, Qt::AlignHCenter);
+
+    connect(btnStart, &QPushButton::clicked, this, &MainWindow::onStartGameClicked);
+    connect(btnRules, &QPushButton::clicked, this, &MainWindow::onRulesClicked);
+
+    // --- Game Screen ---
+    gameScreen = new QWidget();
+    QHBoxLayout *mainLayout = new QHBoxLayout(gameScreen);
 
     mazeWidget = new MazeWidget(controller, this);
     mainLayout->addWidget(mazeWidget, 2);
@@ -48,7 +74,12 @@ void MainWindow::setupUI() {
 
     mainLayout->addLayout(rightLayout, 1);
 
-    setCentralWidget(centralWidget);
+    // --- Assemble StackedWidget ---
+    stackedWidget->addWidget(startScreen);
+    stackedWidget->addWidget(gameScreen);
+    stackedWidget->setCurrentWidget(startScreen);
+
+    setCentralWidget(stackedWidget);
     resize(800, 500);
     setWindowTitle("Qt 正方形迷宫机器鼠");
 }
@@ -94,9 +125,8 @@ void MainWindow::onGameFinished(bool win, int finalStars) {
     
     QMessageBox::information(this, title, msg);
     
-    // Optional: Restart automatically or wait for a button. 
-    // Here we restart automatically after dismissing the message.
-    controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
+    // Return to start screen after game finishes
+    stackedWidget->setCurrentWidget(startScreen);
 }
 
 void MainWindow::onOpportunityEnded(bool reachedGoal) {
@@ -105,6 +135,22 @@ void MainWindow::onOpportunityEnded(bool reachedGoal) {
                               : "你不小心撞到了墙壁，本次机会结束。\n迷宫的墙壁记忆已保存，机械鼠已回到起点，请开始你的最后一次机会！";
     
     QMessageBox::warning(this, title, msg);
+}
+
+void MainWindow::onStartGameClicked() {
+    controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
+    stackedWidget->setCurrentWidget(gameScreen);
+    this->setFocus(); // Ensure main window gets focus for key events
+}
+
+void MainWindow::onRulesClicked() {
+    QString rules = "【游戏规则】\n\n"
+                    "1. 使用 W/A/S/D 或 方向键 控制机械鼠移动。\n"
+                    "2. 迷宫中有隐藏的墙壁，探索时会记录下来。\n"
+                    "3. 撞墙或到达终点会结束当前机会，你有两次机会。\n"
+                    "4. 尽可能用最少的步数到达终点，步数越少星级越高！\n\n"
+                    "祝你好运！";
+    QMessageBox::information(this, "游戏规则", rules);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event) {

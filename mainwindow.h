@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QLabel>
+#include <QStackedWidget>
+#include <QPushButton>
 #include "GameController.h"
 #include "MazeWidget.h"
 
@@ -21,9 +23,16 @@ private slots:
     void updateUI();
     void onGameFinished(bool win, int finalStars);
     void onOpportunityEnded(bool reachedGoal);
+    void onStartGameClicked();
+    void onRulesClicked();
 
 private:
     GameController *controller;
+    
+    QStackedWidget *stackedWidget;
+    QWidget *startScreen;
+    QWidget *gameScreen;
+    
     MazeWidget *mazeWidget;
     QTableWidget *attemptTable;
     QLabel *statusLabel;
