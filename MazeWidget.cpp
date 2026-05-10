@@ -7,9 +7,9 @@ MazeWidget::MazeWidget(GameController *controller, QWidget *parent)
     : QWidget(parent), controller(controller), cellSize(40) {
     setMinimumSize(400, 400);
     
-    // Load the mouse image
+    // 加载机械鼠图片
     if (!mousePixmap.load(":/mouse.png")) {
-        // If loading fails, it will remain empty, and we can fallback to drawing a circle or just log it.
+        // 如果加载失败，pixmap 将保持为空，退回到绘制圆形的备用方案
         qWarning("Failed to load mouse.png");
     }
 
@@ -21,7 +21,7 @@ MazeWidget::MazeWidget(GameController *controller, QWidget *parent)
 QPoint MazeWidget::mapToScreen(const QPoint& p) const {
     const MazeModel& maze = controller->getMaze();
     int h = maze.getHeight();
-    // Mathematical coordinates to screen: (x, y) -> (x, height - 1 - y)
+    // 数学坐标系转换为屏幕坐标系: (x, y) -> (x, height - 1 - y)
     return QPoint(p.x() * cellSize, (h - 1 - p.y()) * cellSize);
 }
 
@@ -36,45 +36,53 @@ void MazeWidget::paintEvent(QPaintEvent *event) {
     int w = knownMaze.getWidth();
     int h = knownMaze.getHeight();
 
-    // Auto-adjust cell size
+    // 自动调整格子大小
     if (w > 0 && h > 0) {
         cellSize = std::min(width() / w, height() / h);
     }
 
-    // Fill overall background with white
+    // 用白色填充整体背景
     painter.fillRect(rect(), Qt::white);
 
     int offsetX = (width() - w * cellSize) / 2;
     int offsetY = (height() - h * cellSize) / 2;
     painter.translate(offsetX, offsetY);
 
-    // Draw cells
+    // 绘制格子
     for (int x = 0; x < w; ++x) {
         for (int y = 0; y < h; ++y) {
             QPoint screenPos = mapToScreen(QPoint(x, y));
             QRect rect(screenPos.x(), screenPos.y(), cellSize, cellSize);
 
             if (knownMaze.getCell(x, y).known) {
-                painter.fillRect(rect, Qt::white); // Visited (White)
+                painter.fillRect(rect, Qt::white); // 已探索（白色）
             } else {
-                painter.fillRect(rect, Qt::black); // Unknown (Black)
+                painter.fillRect(rect, Qt::black); // 未知（黑色）
             }
 
             if (QPoint(x, y) == state.startPos) {
-                painter.fillRect(rect, QColor(144, 238, 144)); // Start (Light green)
+                painter.fillRect(rect, QColor(144, 238, 144)); // 起点（浅绿色）
             }
-            if (QPoint(x, y) == state.goalPos) {
-                // Draw blue circular base
+            if (controller->isEasterEggActive() && x == w - 1 && y == h - 1) {
+                // 绘制彩蛋（黄色问号）
+                painter.setPen(QColor(255, 215, 0)); // 金色/黄色
+                QFont font = painter.font();
+                font.setPixelSize(cellSize * 0.8);
+                font.setBold(true);
+                painter.setFont(font);
+                painter.drawText(rect, Qt::AlignCenter, "?");
+            } else if (QPoint(x, y) == state.goalPos) {
+                // 绘制蓝色圆形底座
                 painter.setPen(Qt::NoPen);
-                painter.setBrush(QColor(30, 144, 255)); // Dodger Blue
+                painter.setBrush(QColor(30, 144, 255)); // 亮蓝色
                 painter.drawEllipse(screenPos.x() + cellSize * 0.2, screenPos.y() + cellSize * 0.7, cellSize * 0.6, cellSize * 0.2);
                 
-                // Draw pole
-                painter.setPen(QPen(QColor(139, 69, 19), std::max(2, cellSize / 15))); // Brown pole
+                // 绘制旗杆
+                painter.setPen(QPen(QColor(139, 69, 19), std::max(2, cellSize / 15))); // 棕色旗杆
                 painter.drawLine(screenPos.x() + cellSize * 0.5, screenPos.y() + cellSize * 0.8, 
                                  screenPos.x() + cellSize * 0.5, screenPos.y() + cellSize * 0.2);
                 
-                // Draw red flag
+                // 绘制红色小旗子
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(Qt::red);
                 QPolygon flag;
@@ -86,13 +94,13 @@ void MazeWidget::paintEvent(QPaintEvent *event) {
         }
     }
 
-    // Draw maze boundary
-    QColor wallColor(255, 165, 0); // Orange/Yellow color for better visibility
+    // 绘制迷宫边界
+    QColor wallColor(255, 165, 0); // 橙黄色，以提高可见度
     painter.setPen(QPen(wallColor, 3));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(0, 0, w * cellSize, h * cellSize);
 
-    // Draw known walls
+    // 绘制已探索的墙壁
     painter.setPen(QPen(wallColor, 3));
     for (int x = 0; x < w; ++x) {
         for (int y = 0; y < h; ++y) {
@@ -116,17 +124,17 @@ void MazeWidget::paintEvent(QPaintEvent *event) {
         }
     }
 
-    // Draw mouse
+    // 绘制机械鼠
     QPoint mouseScreenPos = mapToScreen(state.mousePos);
     if (!mousePixmap.isNull()) {
-        // Scale pixmap to fit the cell nicely (e.g. 80% of cell size)
+        // 缩放图片使其完美适应格子大小（例如格子的80%大小）
         int padding = cellSize * 0.1;
         int targetSize = cellSize * 0.8;
         painter.drawPixmap(mouseScreenPos.x() + padding, mouseScreenPos.y() + padding, 
                            targetSize, targetSize, 
                            mousePixmap.scaled(targetSize, targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     } else {
-        // Fallback if image failed to load
+        // 如果图片加载失败，退回到绘制蓝色的圆形
         painter.setBrush(QBrush(Qt::blue));
         painter.setPen(Qt::NoPen);
         painter.drawEllipse(mouseScreenPos.x() + cellSize / 4, mouseScreenPos.y() + cellSize / 4, cellSize / 2, cellSize / 2);

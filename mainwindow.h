@@ -23,6 +23,7 @@ private slots:
     void updateUI();
     void onGameFinished(bool win, int finalStars);
     void onOpportunityEnded(bool reachedGoal);
+    void onEasterEggFound();
     void onStartGameClicked();
     void onRulesClicked();
 

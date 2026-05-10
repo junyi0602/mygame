@@ -14,8 +14,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(controller, &GameController::stateChanged, this, &MainWindow::updateUI);
     connect(controller, &GameController::gameFinished, this, &MainWindow::onGameFinished);
     connect(controller, &GameController::opportunityEnded, this, &MainWindow::onOpportunityEnded);
+    connect(controller, &GameController::easterEggFound, this, &MainWindow::onEasterEggFound);
 
-    // Focus policy to accept keyboard events
+    // 设置焦点策略，以接收键盘事件
     setFocusPolicy(Qt::StrongFocus);
 }
 
@@ -25,7 +26,7 @@ MainWindow::~MainWindow() {
 void MainWindow::setupUI() {
     stackedWidget = new QStackedWidget(this);
 
-    // --- Start Screen ---
+    // --- 开始界面 (Start Screen) ---
     startScreen = new QWidget();
     QVBoxLayout *startLayout = new QVBoxLayout(startScreen);
     startLayout->setAlignment(Qt::AlignCenter);
@@ -50,7 +51,7 @@ void MainWindow::setupUI() {
     connect(btnStart, &QPushButton::clicked, this, &MainWindow::onStartGameClicked);
     connect(btnRules, &QPushButton::clicked, this, &MainWindow::onRulesClicked);
 
-    // --- Game Screen ---
+    // --- 游戏界面 (Game Screen) ---
     gameScreen = new QWidget();
     QHBoxLayout *mainLayout = new QHBoxLayout(gameScreen);
 
@@ -74,7 +75,7 @@ void MainWindow::setupUI() {
 
     mainLayout->addLayout(rightLayout, 1);
 
-    // --- Assemble StackedWidget ---
+    // --- 组装堆叠窗口 (Assemble StackedWidget) ---
     stackedWidget->addWidget(startScreen);
     stackedWidget->addWidget(gameScreen);
     stackedWidget->setCurrentWidget(startScreen);
@@ -136,22 +137,51 @@ void MainWindow::onGameFinished(bool win, int finalStars) {
         stackedWidget->setCurrentWidget(gameScreen);
         this->setFocus();
     } else {
-        this->close(); // Exit the application
+        this->close(); // 退出程序
     }
 }
 
 void MainWindow::onOpportunityEnded(bool reachedGoal) {
     QString title = reachedGoal ? "到达终点！" : "哎呀，撞墙了！";
-    QString msg = reachedGoal ? "太棒了，你成功找到了终点！\n迷宫记忆已保存，这是你的第二次机会，试试看能不能走得更快！"
-                              : "你不小心撞到了墙壁，本次机会结束。\n迷宫的墙壁记忆已保存，机械鼠已回到起点，请开始你的最后一次机会！";
+    QString msg;
+    
+    if (reachedGoal) {
+        const GameState& state = controller->getState();
+        if (state.attempts.size() == 1 && state.attempts[0].stars == 3) {
+            controller->setEasterEggActive(true);
+            msg = "太棒了，你成功找到了终点！\n迷宫深处有特殊情况... 迷宫记忆已保存，这是你的第二次机会，去探索迷宫的右上角吧！";
+        } else {
+            msg = "太棒了，你成功找到了终点！\n迷宫记忆已保存，这是你的第二次机会，试试看能不能走得更快！";
+        }
+    } else {
+        msg = "你不小心撞到了墙壁，本次机会结束。\n迷宫的墙壁记忆已保存，机械鼠已回到起点，请开始你的最后一次机会！";
+    }
     
     QMessageBox::warning(this, title, msg);
+}
+
+void MainWindow::onEasterEggFound() {
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("发现彩蛋！");
+    msgBox.setText("恭喜找到彩蛋，得到隐藏的五星级评分，并感谢玩家游玩本游戏！");
+    QPushButton *btnRestart = msgBox.addButton("再来一局", QMessageBox::AcceptRole);
+    QPushButton *btnQuit = msgBox.addButton("结束游戏", QMessageBox::RejectRole);
+    
+    msgBox.exec();
+    
+    if (msgBox.clickedButton() == btnRestart) {
+        controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
+        stackedWidget->setCurrentWidget(gameScreen);
+        this->setFocus();
+    } else {
+        this->close();
+    }
 }
 
 void MainWindow::onStartGameClicked() {
     controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
     stackedWidget->setCurrentWidget(gameScreen);
-    this->setFocus(); // Ensure main window gets focus for key events
+    this->setFocus(); // 确保主窗口获得焦点以处理按键事件
 }
 
 void MainWindow::onRulesClicked() {
@@ -159,7 +189,8 @@ void MainWindow::onRulesClicked() {
                     "1. 使用 W/A/S/D 或 方向键 控制机械鼠移动。\n"
                     "2. 迷宫中有隐藏的墙壁，探索时会记录下来。\n"
                     "3. 撞墙或到达终点会结束当前机会，你有两次机会。\n"
-                    "4. 尽可能用最少的步数到达终点，步数越少星级越高！\n\n"
+                    "4. 尽可能用最少的步数到达终点，步数越少星级越高！\n"
+                    "5. 隐藏彩蛋：如果在第一次尝试中就获得3星评分，第二次机会时迷宫深处（右上角）会出现神秘彩蛋！\n\n"
                     "祝你好运！";
     QMessageBox::information(this, "游戏规则", rules);
 }
@@ -183,8 +214,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
             controller->tryMove(Direction::Right);
             break;
         default:
-            // Let the base class handle other keys, but make sure we accept the event 
-            // if we want to prevent it from propagating further when not needed.
+            // 让基类处理其他按键，但确保我们接受事件以防止在不需要时进一步传播。
             QMainWindow::keyPressEvent(event);
             break;
     }

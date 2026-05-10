@@ -8,11 +8,11 @@ void GameController::startNewGame(int width, int height, QPoint start, QPoint go
     maze = MazeModel(width, height);
     knownMaze = MazeModel(width, height);
     
-    // Initially all walls are unknown (assumed no wall until sensed)
+    // 初始化时所有的墙壁都是未知的（在感知到之前假定没有墙）
     for(int x = 0; x < width; ++x){
         for(int y = 0; y < height; ++y){
             for(auto& pair : knownMaze.getCell(x,y).walls){
-                pair.second = false; // Unknown
+                pair.second = false; // 未知
             }
             knownMaze.getCell(x,y).known = false;
         }
@@ -29,6 +29,7 @@ void GameController::startNewGame(int width, int height, QPoint start, QPoint go
     state.currentActionCount = 0;
     state.gameOver = false;
     state.gameWin = false;
+    m_easterEggActive = false;
 
     senseCurrentCell();
     emit stateChanged();
@@ -62,6 +63,17 @@ void GameController::tryMove(Direction dir) {
     QPoint next = state.mousePos + delta(dir);
     state.currentActionCount++;
 
+    // 检查是否触发彩蛋
+    if (m_easterEggActive && next.x() == maze.getWidth() - 1 && next.y() == maze.getHeight() - 1) {
+        state.mousePos = next;
+        senseCurrentCell();
+        state.gameOver = true;
+        state.gameWin = true;
+        emit easterEggFound();
+        emit stateChanged();
+        return;
+    }
+
     bool hitWall = !maze.inBounds(next) || maze.hasWall(state.mousePos, dir);
     bool reachedGoal = (next == state.goalPos);
 
@@ -85,7 +97,7 @@ void GameController::tryMove(Direction dir) {
         state.mousePos = state.startPos;
         senseCurrentCell();
 
-        // Emit signal for the end of this opportunity
+        // 抛出本次机会结束的信号
         if (state.opportunitiesLeft > 0) {
             emit opportunityEnded(reachedGoal);
         }
@@ -112,7 +124,7 @@ void GameController::tryMove(Direction dir) {
         return;
     }
 
-    // Normal move
+    // 正常移动
     state.mousePos = next;
     senseCurrentCell();
     emit stateChanged();

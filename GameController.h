@@ -40,18 +40,23 @@ public:
     const MazeModel& getMaze() const { return maze; }
     MazeModel& getMazeRef() { return maze; }
     
-    // The player's known map of walls
+    // 玩家已知（已探索）的墙壁地图
     MazeModel knownMaze; 
+
+    bool isEasterEggActive() const { return m_easterEggActive; }
+    void setEasterEggActive(bool active) { m_easterEggActive = active; }
 
 signals:
     void stateChanged();
     void gameFinished(bool win, int finalStars);
     void opportunityEnded(bool reachedGoal);
+    void easterEggFound();
 
 private:
     GameState state;
     MazeModel maze;
     int optimalSteps;
+    bool m_easterEggActive = false;
 
     void senseCurrentCell();
     int calculateStars(int usedSteps, int optimalSteps) const;
