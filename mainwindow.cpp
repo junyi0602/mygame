@@ -120,13 +120,24 @@ void MainWindow::updateUI() {
 
 void MainWindow::onGameFinished(bool win, int finalStars) {
     QString title = win ? "游戏胜利！" : "游戏失败！";
-    QString msg = win ? QString("你成功到达了终点！\n最终评价: %1 星").arg(finalStars) 
-                      : "很遗憾，你的机会用尽了！";
+    QString msg = win ? QString("你成功到达了终点！\n最终评价: %1 星\n\n是否再来一局？").arg(finalStars) 
+                      : "很遗憾，你的机会用尽了！\n\n是否再来一局？";
     
-    QMessageBox::information(this, title, msg);
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(title);
+    msgBox.setText(msg);
+    QPushButton *btnRestart = msgBox.addButton("再来一局", QMessageBox::AcceptRole);
+    QPushButton *btnQuit = msgBox.addButton("结束游戏", QMessageBox::RejectRole);
     
-    // Return to start screen after game finishes
-    stackedWidget->setCurrentWidget(startScreen);
+    msgBox.exec();
+    
+    if (msgBox.clickedButton() == btnRestart) {
+        controller->startNewGame(10, 10, QPoint(0,0), QPoint(6,7));
+        stackedWidget->setCurrentWidget(gameScreen);
+        this->setFocus();
+    } else {
+        this->close(); // Exit the application
+    }
 }
 
 void MainWindow::onOpportunityEnded(bool reachedGoal) {
